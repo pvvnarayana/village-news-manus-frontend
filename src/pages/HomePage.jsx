@@ -10,7 +10,7 @@ const HomePage = () => {
   const { isAuthenticated, loginWithGoogle } = useAuth();
   const googleButtonRef = useRef(null);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated() && window.google && googleButtonRef.current) {

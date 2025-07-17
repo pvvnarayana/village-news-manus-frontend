@@ -110,7 +110,7 @@ export const AuthProvider = ({ children }) => {
       } else {
         return { success: false, error: result.error };
       }
-    } catch (error) {
+    } catch {
       return { success: false, error: 'Google login failed' };
     }
   };

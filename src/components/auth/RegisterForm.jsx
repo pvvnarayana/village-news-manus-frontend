@@ -42,7 +42,7 @@ const RegisterForm = () => {
       return;
     }
 
-    const { confirmPassword, ...registrationData } = formData;
+    const { confirmPassword: _, ...registrationData } = formData;
     const result = await register(registrationData);
     
     if (result.success) {

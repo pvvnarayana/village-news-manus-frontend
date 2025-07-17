@@ -59,7 +59,7 @@ const LoginForm = () => {
             } else {
               setError(result.error);
             }
-          } catch (err) {
+          } catch {
             setError('Google login failed');
           }
           setLoading(false);
