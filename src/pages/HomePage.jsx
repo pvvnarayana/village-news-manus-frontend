@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import NewsList from '../components/news/NewsList';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -7,7 +7,34 @@ import { PlusCircle, Video } from 'lucide-react';
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loginWithGoogle } = useAuth();
+  const googleButtonRef = useRef(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated() && window.google && googleButtonRef.current) {
+      window.google.accounts.id.initialize({
+        client_id: "462417954626-mtncb1anftveocc21lkoii0s25rt21vd.apps.googleusercontent.com",
+        callback: async (response) => {
+          setLoading(true);
+          setError('');
+          const result = await loginWithGoogle(response);
+          if (result.success) {
+            navigate('/');
+          } else {
+            setError(result.error);
+          }
+          setLoading(false);
+        },
+      });
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: "outline",
+        size: "large",
+        width: "100%",
+      });
+    }
+  }, [isAuthenticated, loginWithGoogle, navigate]);
 
   return (
     <div className="space-y-8">
@@ -33,7 +60,7 @@ const HomePage = () => {
               <Button 
                 size="lg" 
                 variant="outline"
-                className="text-white border-white hover:bg-white hover:text-blue-600"
+                className="border-white text-black bg-white hover:bg-blue-100 hover:text-blue-600"
                 onClick={() => navigate('/upload-video')}
               >
                 <Video className="h-5 w-5 mr-2" />
@@ -41,18 +68,22 @@ const HomePage = () => {
               </Button>
             </div>
           ) : (
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-col gap-4 w-full max-w-xs">
+              {error && (
+                <div className="mb-2 text-red-600 text-center">{error}</div>
+              )}
+              <div ref={googleButtonRef} className="w-full flex justify-center mb-2"></div>
               <Button 
                 size="lg" 
-                variant="secondary"
-                onClick={() => navigate('/register')}
+                onClick={() => navigate('/register')} 
+                className="bg-white text-blue-600 hover:bg-gray-100"
               >
                 Join Community
               </Button>
               <Button 
                 size="lg" 
                 variant="outline"
-                className="text-white border-white hover:bg-white hover:text-blue-600"
+                className="bg-transparent text-white border-white hover:bg-white hover:text-blue-600"
                 onClick={() => navigate('/login')}
               >
                 Sign In
@@ -85,4 +116,3 @@ const HomePage = () => {
 };
 
 export default HomePage;
-

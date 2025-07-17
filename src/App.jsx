@@ -11,6 +11,7 @@ import NewsDetailPage from './pages/NewsDetailPage';
 
 // Auth Components
 import LoginForm from './components/auth/LoginForm';
+import LoginPage from './pages/LoginPage';
 import RegisterForm from './components/auth/RegisterForm';
 
 // News Components
@@ -45,7 +46,7 @@ function App() {
               {/* Public Routes */}
               <Route path="/" element={<HomePage />} />
               <Route path="/news/:id" element={<NewsDetailPage />} />
-              <Route path="/login" element={<LoginForm />} />
+              <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterForm />} />
               
               {/* Protected Routes */}

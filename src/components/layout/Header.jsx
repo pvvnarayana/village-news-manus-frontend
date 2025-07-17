@@ -138,12 +138,14 @@ const Header = () => {
               <div className="flex items-center space-x-2">
                 <Button 
                   variant="ghost" 
-                  onClick={() => navigate('/login')}
+                  onClick={() => navigate('/login')} 
+                  className="text-gray-700 hover:bg-gray-100"
                 >
                   Login
                 </Button>
                 <Button 
-                  onClick={() => navigate('/register')}
+                  onClick={() => navigate('/register')} 
+                  className="bg-blue-600 text-white hover:bg-blue-700"
                 >
                   Register
                 </Button>
@@ -157,4 +159,3 @@ const Header = () => {
 };
 
 export default Header;
-

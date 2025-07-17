@@ -76,9 +76,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    if (window.google?.accounts?.id) {
+      window.google.accounts.id.disableAutoSelect();
+    }
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
   };
 
@@ -90,6 +94,27 @@ export const AuthProvider = ({ children }) => {
     return !!token && !!user;
   };
 
+  // Google login
+  const loginWithGoogle = async (googleResponse) => {
+    try {
+      const result = await authAPI.loginWithGoogleId({ id_token: googleResponse.credential });
+      if (result.success) {
+        const { access_token } = result.data;
+        setToken(access_token);
+        localStorage.setItem('token', access_token);
+        // Get user details
+        const userResponse = await authAPI.getCurrentUser();
+        setUser(userResponse.data);
+        localStorage.setItem('user', JSON.stringify(userResponse.data));
+        return { success: true };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      return { success: false, error: 'Google login failed' };
+    }
+  };
+
   const value = {
     user,
     token,
@@ -99,6 +124,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     isAdmin,
     isAuthenticated,
+    loginWithGoogle,
   };
 
   return (
@@ -107,4 +133,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-

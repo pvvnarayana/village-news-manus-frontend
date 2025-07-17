@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '../../context/AuthContext';
 import { Loader2 } from 'lucide-react';
+import { authAPI } from '../../services/api';
 
 const LoginForm = () => {
   const [formData, setFormData] = useState({
@@ -15,7 +16,8 @@ const LoginForm = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
+  const googleButtonRef = useRef(null);
+
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -41,6 +43,35 @@ const LoginForm = () => {
     
     setLoading(false);
   };
+
+  // Google Identity Services
+  useEffect(() => {
+    if (window.google && googleButtonRef.current) {
+      window.google.accounts.id.initialize({
+        client_id: "462417954626-mtncb1anftveocc21lkoii0s25rt21vd.apps.googleusercontent.com",
+        callback: async (response) => {
+          setLoading(true);
+          setError('');
+          try {
+            const result = await authAPI.loginWithGoogleId({ id_token: response.credential });
+            if (result.success) {
+              navigate('/');
+            } else {
+              setError(result.error);
+            }
+          } catch (err) {
+            setError('Google login failed');
+          }
+          setLoading(false);
+        },
+      });
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: "outline",
+        size: "large",
+        width: "100%",
+      });
+    }
+  }, [navigate]);
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
@@ -85,21 +116,23 @@ const LoginForm = () => {
               />
             </div>
             
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full"
               disabled={loading}
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign in
             </Button>
           </form>
-          
-          <div className="mt-4 text-center text-sm">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-blue-600 hover:underline">
-              Sign up
-            </Link>
+          <div className="mt-4 flex flex-col items-center">
+            <div ref={googleButtonRef} className="w-full flex justify-center"></div>
+            <div className="mt-4 text-center text-sm">
+              Don't have an account?{' '}
+              <Link to="/register" className="text-blue-600 hover:underline">
+                Sign up
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>

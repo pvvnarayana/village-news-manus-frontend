@@ -25,13 +25,68 @@ api.interceptors.request.use(
 );
 
 // Response interceptor to handle auth errors
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (refreshToken) {
+        if (isRefreshing) {
+          return new Promise(function(resolve, reject) {
+            failedQueue.push({resolve, reject});
+          })
+          .then(token => {
+            originalRequest.headers['Authorization'] = 'Bearer ' + token;
+            return api(originalRequest);
+          })
+          .catch(err => {
+            return Promise.reject(err);
+          });
+        }
+        isRefreshing = true;
+        try {
+          const response = await api.post('/auth/refresh', { refresh_token: refreshToken });
+          const { access_token, refresh_token: newRefreshToken } = response.data;
+          localStorage.setItem('token', access_token);
+          if (newRefreshToken) {
+            localStorage.setItem('refresh_token', newRefreshToken);
+          }
+          api.defaults.headers.common['Authorization'] = 'Bearer ' + access_token;
+          processQueue(null, access_token);
+          isRefreshing = false;
+          originalRequest.headers['Authorization'] = 'Bearer ' + access_token;
+          return api(originalRequest);
+        } catch (err) {
+          processQueue(err, null);
+          isRefreshing = false;
+          localStorage.removeItem('token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+          return Promise.reject(err);
+        }
+      } else {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -40,7 +95,31 @@ api.interceptors.response.use(
 // Auth API
 export const authAPI = {
   register: (userData) => api.post('/auth/register', userData),
-  login: (credentials) => api.post('/auth/login', credentials),
+  login: async (credentials) => {
+    const response = await api.post('/auth/login', credentials);
+    const { access_token, refresh_token } = response.data;
+    localStorage.setItem('token', access_token);
+    if (refresh_token) {
+      localStorage.setItem('refresh_token', refresh_token);
+    }
+    return response;
+  },
+  loginWithGoogleId: async ({ id_token }) => {
+    try {
+      const response = await api.post('/auth/google', { id_token });
+      const { access_token, refresh_token } = response.data;
+      localStorage.setItem('token', access_token);
+      if (refresh_token) {
+        localStorage.setItem('refresh_token', refresh_token);
+      }
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Google login failed',
+      };
+    }
+  },
   getCurrentUser: () => api.get('/users/me'),
 };
 
